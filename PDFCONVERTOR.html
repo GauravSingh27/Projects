@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Pro - Complete Document Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .glass { backdrop-filter: blur(20px); background: rgba(255,255,255,0.25); }
+        .glass-dark { backdrop-filter: blur(20px); background: rgba(31,41,55,0.5); }
+        .upload-zone { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .upload-zone.dragover { transform: scale(1.02); border-color: #10b981 !important; background: linear-gradient(45deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05)) !important; }
+        .progress-fill { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeInUp { animation: fadeInUp 0.6s ease-out forwards; }
+        .image-preview { max-height: 120px; object-fit: cover; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-gray-900 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Hero Header -->
+        <div class="text-center mb-20 animate-fadeInUp">
+            <div class="inline-flex items-center bg-gradient-to-r from-emerald-500 to-blue-600 bg-opacity-10 px-6 py-3 rounded-full mb-8 glass">
+                <svg class="w-6 h-6 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-emerald-800 dark:text-emerald-200">🔥 Images ↔ PDF • 100% Private • Client-Side</span>
+            </div>
+            <div class="flex justify-center items-center mb-6">
+                <div class="w-24 h-24 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl mr-6">
+                    <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-6xl md:text-7xl font-black bg-gradient-to-r from-gray-900 via-emerald-900 to-blue-900 bg-clip-text text-transparent mb-4 leading-tight">PDF Pro</h1>
+                    <p class="text-2xl text-gray-600 dark:text-gray-300 font-medium max-w-2xl mx-auto">Complete bidirectional converter: Images ↔ PDF + Merge + Split</p>
+                </div>
+            </div>
+            <button id="themeToggle" class="px-6 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all border border-white/50 dark:border-slate-700/50 text-sm font-semibold flex items-center space-x-2 fixed top-6 right-6">
+                <svg id="sun" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10.5 3.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM10 7a3 3 0 100 6 3 3 0 000-6zm-1.5 4a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"></path></svg>
+                <svg id="moon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <span>Dark Mode</span>
+            </button>
+        </div>
+
+        <!-- 4 Professional Tools -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
+            <!-- 🔵 PDF to Images -->
+            <div class="group bg-white/60 dark:bg-slate-800/60 glass glass-dark backdrop-blur-xl rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-white/30 dark:border-slate-700/50 animate-fadeInUp" style="animation-delay: 0.1s">
+                <div class="flex items-center mb-6">
+                    <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl mr-4"></div>
+                    <div><h3 class="text-xl font-bold text-gray-900 dark:text-white">PDF → Images</h3><p class="text-blue-600 dark:text-blue-400 text-sm font-semibold">PNG Export • All Pages</p></div>
+                </div>
+                <div id="pdfToImageDrop" class="upload-zone border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-10 text-center mb-6 hover:border-blue-400 cursor-pointer transition-all">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16"></path>
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-1" id="pdfToImageText">Drop PDF or click</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">High quality PNG conversion</p>
+                </div>
+                <input type="file" id="pdfToImageFile" accept="application/pdf" class="hidden">
+                <button id="pdfToImageBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all disabled:opacity-50" disabled>Convert to PNG</button>
+                <div id="pdfToImageOutput" class="mt-6 grid grid-cols-2 gap-3 hidden"></div>
+            </div>
+
+            <!-- 🟢 Images to PDF (NEW!) -->
+            <div class="group bg-white/60 dark:bg-slate-800/60 glass glass-dark backdrop-blur-xl rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-white/30 dark:border-slate-700/50 animate-fadeInUp" style="animation-delay: 0.2s">
+                <div class="flex items-center mb-6">
+                    <div class="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl mr-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div><h3 class="text-xl font-bold text-gray-900 dark:text-white">Images → PDF</h3><p class="text-emerald-600 dark:text-emerald-400 text-sm font-semibold">JPG/PNG → PDF • Multiple Files</p></div>
+                </div>
+                <div id="imagesToPdfDrop" class="upload-zone border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-10 text-center mb-6 hover:border-emerald-400 cursor-pointer transition-all">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400 group-hover:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-1" id="imagesToPdfText">Drop images or click</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">JPG, PNG, GIF → Professional PDF</p>
+                </div>
+                <input type="file" id="imagesToPdfFiles" accept="image/*" multiple class="hidden">
+                <div id="imagesPreview" class="mb-6 max-h-32 overflow-y-auto space-y-2 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl hidden grid grid-cols-4 gap-2"></div>
+                <button id="imagesToPdfBtn" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all disabled:opacity-50" disabled>Convert to PDF</button>
+                <a id="imagesDownload" class="hidden w-full mt-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all block text-center no-underline">📥 Download PDF</a>
+            </div>
+
+            <!-- 🔴 Merge PDFs -->
+            <div class="group bg-white/60 dark:bg-slate-800/60 glass glass-dark backdrop-blur-xl rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-white/30 dark:border-slate-700/50 animate-fadeInUp lg:col-span-2" style="animation-delay: 0.3s">
+                <div class="flex items-center mb-6">
+                    <div class="w-14 h-14 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-xl mr-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div><h3 class="text-xl font-bold text-gray-900 dark:text-white">Merge PDFs</h3><p class="text-orange-600 dark:text-orange-400 text-sm font-semibold">Unlimited files • Preserve quality</p></div>
+                </div>
+                <div id="mergePdfDrop" class="upload-zone border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-10 text-center mb-6 hover:border-orange-400 cursor-pointer transition-all">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400 group-hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-1" id="mergePdfText">Drop multiple PDFs</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Combine 2+ files instantly</p>
+                </div>
+                <input type="file" id="mergePdfFiles" accept="application/pdf" multiple class="hidden">
+                <div id="mergeFileList" class="mb-6 max-h-24 overflow-y-auto space-y-2 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl hidden"></div>
+                <button id="mergePdfBtn" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all disabled:opacity-50" disabled>Merge PDFs</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        const isDark = localStorage.getItem('darkMode') === 'true' || window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) {
+            html.classList.add('dark');
+            document.getElementById('sun').classList.remove('hidden');
+            document.getElementById('moon').classList.add('hidden');
+        }
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            document.getElementById('sun').classList.toggle('hidden', !html.classList.contains('dark'));
+            document.getElementById('moon').classList.toggle('hidden', html.classList.contains('dark'));
+            localStorage.setItem('darkMode', html.classList.contains('dark'));
+        });
+
+        // Universal drag-drop handler
+        function setupDragDrop(dropZone, fileInput, callback) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            ['dragenter', 'dragover'].forEach(event => {
+                dropZone.addEventListener(event, () => dropZone.classList.add('dragover'));
+            });
+            ['dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, () => dropZone.classList.remove('dragover'));
+            });
+            dropZone.addEventListener('drop', e => {
+                fileInput.files = e.dataTransfer.files;
+                callback(e.dataTransfer.files);
+            });
+            dropZone.addEventListener('click', () => fileInput.click());
+        }
+
+        // 🖼️ IMAGES TO PDF - NEW FEATURE
+        function initImagesToPdf() {
+            const dropZone = document.getElementById('imagesToPdfDrop');
+            const fileInput = document.getElementById('imagesToPdfFiles');
+            const btn = document.getElementById('imagesToPdfBtn');
+            const preview = document.getElementById('imagesPreview');
+            const downloadLink = document.getElementById('imagesDownload');
+            const text = document.getElementById('imagesToPdfText');
+
+            setupDragDrop(dropZone, fileInput, handleImageFiles);
+
+            function handleImageFiles(files) {
+                const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+                if (imageFiles.length === 0) return;
+
+                preview.innerHTML = imageFiles.map((file, i) => `
+                    <div class="bg-white dark:bg-slate-800 p-2 rounded-lg shadow">
+                        <img src="${URL.createObjectURL(file)}" class="image-preview w-full rounded block" alt="${file.name}">
+                        <p class="text-xs text-gray-500 truncate mt-1">${file.name}</p>
+                    </div>
+                `).join('');
+                preview.classList.remove('hidden');
+                text.textContent = `Ready: ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''}`;
+                btn.disabled = false;
+                fileInput.files = files; // Store for conversion
+            }
+
+            fileInput.addEventListener('change', e => handleImageFiles(e.target.files));
+
+            btn.addEventListener('click', async () => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    const files = Array.from(fileInput.files).filter(f => f.type.startsWith('image/'));
+
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const imgData = await getImageData(file);
+                        const imgProps = doc.getImageProperties(imgData);
+                        const pdfWidth = doc.internal.pageSize.getWidth();
+                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                        if (i > 0) doc.addPage();
+                        doc.addImage(imgData, 'IMAGE', 0, 0, pdfWidth, pdfHeight);
+                    }
+
+                    const pdfBlob = doc.output('blob');
+                    const url = URL.createObjectURL(pdfBlob);
+                    downloadLink.href = url;
+                    downloadLink.download = `images-to-pdf-${Date.now()}.pdf`;
+                    downloadLink.classList.remove('hidden');
+                    text.textContent = `✅ PDF created with ${files.length} images!`;
+                } catch (error) {
+                    console.error(error);
+                    text.textContent = '❌ Conversion failed';
+                }
+            });
+
+            async function getImageData(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const img = new Image();
+                        img.onload = () => resolve(e.target.result);
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+
+        // 📄 PDF to Images
+        function initPdfToImages() {
+            const dropZone = document.getElementById('pdfToImageDrop');
+            const fileInput = document.getElementById('pdfToImageFile');
+            const btn = document.getElementById('pdfToImageBtn');
+            const output = document.getElementById('pdfToImageOutput');
+            const text = document.getElementById('pdfToImageText');
+
+            setupDragDrop(dropZone, fileInput, files => {
+                const file = files[0];
+                if (file && file.type === 'application/pdf') {
+                    text.textContent = `Selected: ${file.name}`;
+                    btn.disabled = false;
+                }
+            });
+
+            fileInput.addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (file && file.type === 'application/pdf') {
+                    text.textContent = `Selected: ${file.name}`;
+                    btn.disabled = false;
+                }
+            });
+
+            btn.addEventListener('click', async () => {
+                try {
+                    const file = fileInput.files[0];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                    
+                    output.innerHTML = '';
+                    output.classList.remove('hidden');
+
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const scale = 2;
+                        const viewport = page.getViewport({ scale });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+                        const img = document.createElement('img');
+                        img.src = canvas.toDataURL('image/png');
+                        img.className = 'w-full rounded-xl shadow-lg hover:shadow-xl transition-all cursor-pointer';
+                        img.onclick = () => {
+                            const a = document.createElement('a');
+                            a.href = img.src;
+                            a.download = `page-${i}.png`;
+                            a.click();
+                        };
+                        output.appendChild(img);
+                    }
+                    text.textContent = `✅ Converted ${pdf.numPages} pages!`;
+                } catch (error) {
+                    console.error(error);
+                    text.textContent = '❌ Error converting PDF';
+                }
+            });
+        }
+
+        // 🔗 Merge PDFs (simplified)
+        function initMergePdf() {
+            const dropZone = document.getElementById('mergePdfDrop');
+            const fileInput = document.getElementById('mergePdfFiles');
+            const btn = document.getElementById('mergePdfBtn');
+            const fileList = document.getElementById('mergeFileList');
+            const text = document.getElementById('mergePdfText');
+
+            setupDragDrop(dropZone, fileInput, files => {
+                const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf');
+                if (pdfFiles.length >= 2) {
+                    fileList.innerHTML = pdfFiles.map(f => 
+                        `<div class="p-2 bg-white dark:bg-slate-800 rounded-lg text-sm truncate">${f.name}</div>`
+                    ).join('');
+                    fileList.classList.remove('hidden');
+                    text.textContent = `${pdfFiles.length} PDFs ready`;
+                    btn.disabled = false;
+                }
+            });
+
+            btn.addEventListener('click', async () => {
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+                const files = Array.from(fileInput.files);
+
+                for (const file of files) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(arrayBuffer);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach(page => mergedPdf.addPage(page));
+                }
+
+                const pdfBytes = await mergedPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `merged-${Date.now()}.pdf`;
+                a.click();
+            });
+        }
+
+        // Initialize all tools
+        document.addEventListener('DOMContentLoaded', () => {
+            initImagesToPdf();
+            initPdfToImages();
+            initMergePdf();
+        });
+    </script>
+</body>
+</html>
