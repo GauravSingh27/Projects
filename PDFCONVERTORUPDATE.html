@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Pro - Simple Converter with Delete</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .glass { backdrop-filter: blur(20px); background: rgba(255,255,255,0.25); }
+        .glass-dark { backdrop-filter: blur(20px); background: rgba(31,41,55,0.5); }
+        .upload-zone { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .upload-zone.dragover { transform: scale(1.02); border-color: #10b981 !important; background: linear-gradient(45deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05)) !important; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeInUp { animation: fadeInUp 0.6s ease-out forwards; }
+        .image-preview { max-height: 120px; object-fit: cover; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-gray-900 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Hero Header -->
+        <div class="text-center mb-20 animate-fadeInUp">
+            <div class="inline-flex items-center bg-gradient-to-r from-emerald-500 to-blue-600 bg-opacity-10 px-6 py-3 rounded-full mb-8 glass">
+                <svg class="w-6 h-6 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-emerald-800 dark:text-emerald-200">✅ Add → Convert → Download</span>
+            </div>
+            <div class="flex justify-center items-center mb-6">
+                <div class="w-24 h-24 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl mr-6">
+                    <svg class="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-6xl md:text-7xl font-black bg-gradient-to-r from-gray-900 via-emerald-900 to-blue-900 bg-clip-text text-transparent mb-4 leading-tight">PDF CONVERTOR Pro</h1>
+                    <p class="text-2xl text-gray-600 dark:text-gray-300 font-medium max-w-2xl mx-auto">PDF ↔ Images • Free To Use</p>
+                </div>
+            </div>
+            <button id="themeToggle" class="px-6 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all border border-white/50 dark:border-slate-700/50 text-sm font-semibold flex items-center space-x-2 fixed top-6 right-6 z-50">
+                <svg id="sun" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10.5 3.5a.5.5 0 01.5.5v1a.5.5 0 01-1 0v-1a.5.5 0 01.5-.5zM10 7a3 3 0 100 6 3 3 0 000-6zm-1.5 4a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"></path></svg>
+                <svg id="moon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <span>Dark Mode</span>
+            </button>
+        </div>
+
+        <!-- Tools Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
+            <!-- PDF to Images -->
+            <div class="group bg-white/60 dark:bg-slate-800/60 glass glass-dark backdrop-blur-xl rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-white/30 dark:border-slate-700/50 animate-fadeInUp" style="animation-delay: 0.1s">
+                <div class="flex items-center mb-6">
+                    <div class="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl mr-4"></div>
+                    <div><h3 class="text-xl font-bold text-gray-900 dark:text-white">PDF → Images</h3><p class="text-blue-600 dark:text-blue-400 text-sm font-semibold">PNG Export • ZIP Download</p></div>
+                </div>
+                <div id="pdfToImageDrop" class="upload-zone border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-10 text-center mb-6 hover:border-blue-400 cursor-pointer transition-all">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16"></path>
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-1" id="pdfToImageText">Drop PDF or click</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">High quality PNG conversion</p>
+                </div>
+                <input type="file" id="pdfToImageFile" accept="application/pdf" class="hidden">
+                <button id="pdfToImageBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 mb-3" disabled>Convert to PNG</button>
+                <a id="pdfToImageZipDownload" class="w-full hidden bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all block text-center no-underline">📦 Download All PNGs (ZIP)</a>
+                <div id="pdfToImageOutput" class="mt-6 grid grid-cols-2 gap-3 hidden"></div>
+            </div>
+
+            <!-- Images to PDF with DELETE only -->
+            <div class="group bg-white/60 dark:bg-slate-800/60 glass glass-dark backdrop-blur-xl rounded-3xl p-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border border-white/30 dark:border-slate-700/50 animate-fadeInUp" style="animation-delay: 0.2s">
+                <div class="flex items-center mb-6">
+                    <div class="w-14 h-14 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl mr-4">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div><h3 class="text-xl font-bold text-gray-900 dark:text-white">Images → PDF</h3><p class="text-emerald-600 dark:text-emerald-400 text-sm font-semibold">PNGs/JPEG/JPG → PDF</p></div>
+                </div>
+                <div id="imagesToPdfDrop" class="upload-zone border-2 border-dashed border-gray-200 dark:border-slate-600 rounded-2xl p-10 text-center mb-6 hover:border-emerald-400 cursor-pointer transition-all">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400 group-hover:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-1" id="imagesToPdfText">Drop images or click</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">JPG, PNG, GIF → Professional PDF</p>
+                </div>
+                <input type="file" id="imagesToPdfFiles" accept="image/*" multiple class="hidden">
+                <div id="imagesPreview" class="mb-6 max-h-40 overflow-y-auto space-y-2 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl hidden grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+                <button id="imagesToPdfBtn" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all disabled:opacity-50" disabled>Convert to PDF</button>
+                <a id="imagesDownload" class="hidden w-full mt-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl font-semibold shadow-xl hover:shadow-2xl transition-all block text-center no-underline">📥 Download PDF</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let imageFiles = [];
+
+        // Setup PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Theme toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const html = document.documentElement;
+            const toggle = document.getElementById('themeToggle');
+            const sun = document.getElementById('sun');
+            const moon = document.getElementById('moon');
+            
+            if (localStorage.getItem('darkMode') === 'true' || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                html.classList.add('dark');
+                sun.classList.remove('hidden');
+                moon.classList.add('hidden');
+            }
+            
+            toggle.addEventListener('click', () => {
+                html.classList.toggle('dark');
+                sun.classList.toggle('hidden', !html.classList.contains('dark'));
+                moon.classList.toggle('hidden', html.classList.contains('dark'));
+                localStorage.setItem('darkMode', html.classList.contains('dark'));
+            });
+        });
+
+        // Universal drag-drop
+        function setupDragDrop(dropZoneId, fileInputId, callback) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(fileInputId);
+            
+            ['dragenter', 'dragover'].forEach(event => {
+                dropZone.addEventListener(event, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('dragover');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(event => {
+                dropZone.addEventListener(event, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('dragover');
+                });
+            });
+            
+            dropZone.addEventListener('drop', e => {
+                callback(e.dataTransfer.files);
+                fileInput.files = e.dataTransfer.files;
+            });
+            
+            dropZone.addEventListener('click', () => fileInput.click());
+        }
+
+        // 🖼️ Images to PDF with DELETE FUNCTION
+        function initImagesToPdf() {
+            setupDragDrop('imagesToPdfDrop', 'imagesToPdfFiles', files => {
+                const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+                imageFiles = newFiles;
+                renderImagePreview();
+            });
+
+            document.getElementById('imagesToPdfFiles').addEventListener('change', e => {
+                const newFiles = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+                imageFiles = newFiles;
+                renderImagePreview();
+            });
+
+            // DELETE FUNCTION - removes specific image from array and refreshes preview
+            window.deleteImage = function(index) {
+                imageFiles.splice(index, 1);
+                renderImagePreview();
+            };
+
+            function renderImagePreview() {
+                const preview = document.getElementById('imagesPreview');
+                const btn = document.getElementById('imagesToPdfBtn');
+                const text = document.getElementById('imagesToPdfText');
+
+                preview.innerHTML = '';
+                if (imageFiles.length === 0) {
+                    preview.classList.add('hidden');
+                    btn.disabled = true;
+                    text.textContent = 'Drop images or click';
+                    return;
+                }
+
+                preview.classList.remove('hidden');
+                imageFiles.forEach((file, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'relative bg-white dark:bg-slate-800 p-3 rounded-xl shadow-lg overflow-hidden group';
+                    div.innerHTML = `
+                        <img src="${URL.createObjectURL(file)}" class="w-full h-24 object-cover rounded-lg block" alt="${file.name}">
+                        <p class="text-xs text-gray-500 truncate mt-2 px-1">${file.name}</p>
+                        <div class="absolute top-2 right-2 bg-white dark:bg-slate-800 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all bg-opacity-90 dark:bg-opacity-90">
+                            <button onclick="deleteImage(${index})" class="text-red-500 hover:text-red-600 hover:scale-110 transition-all" title="Remove image">🗑️</button>
+                        </div>
+                    `;
+                    preview.appendChild(div);
+                });
+
+                text.textContent = `Ready: ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''}`;
+                btn.disabled = false;
+            }
+
+            document.getElementById('imagesToPdfBtn').addEventListener('click', async () => {
+                const text = document.getElementById('imagesToPdfText');
+                const downloadLink = document.getElementById('imagesDownload');
+                
+                try {
+                    text.textContent = 'Converting...';
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    for (let i = 0; i < imageFiles.length; i++) {
+                        const imgData = await getImageData(imageFiles[i]);
+                        const imgProps = doc.getImageProperties(imgData);
+                        const pageWidth = doc.internal.pageSize.getWidth();
+                        const pageHeight = doc.internal.pageSize.getHeight();
+                        const ratio = Math.min(pageWidth / imgProps.width, pageHeight / imgProps.height);
+                        const imgWidth = imgProps.width * ratio;
+                        const imgHeight = imgProps.height * ratio;
+                        const x = (pageWidth - imgWidth) / 2;
+                        const y = (pageHeight - imgHeight) / 2;
+
+                        if (i > 0) doc.addPage();
+                        doc.addImage(imgData, imgProps.fileType || 'JPEG', x, y, imgWidth, imgHeight);
+                    }
+
+                    const pdfBlob = doc.output('blob');
+                    downloadLink.href = URL.createObjectURL(pdfBlob);
+                    downloadLink.download = `images-to-pdf-${Date.now()}.pdf`;
+                    downloadLink.classList.remove('hidden');
+                    text.textContent = `✅ PDF created!`;
+                } catch (error) {
+                    console.error(error);
+                    text.textContent = '❌ Conversion failed';
+                }
+            });
+        }
+
+        async function getImageData(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => resolve(e.target.result);
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // PDF to Images (unchanged)
+        function initPdfToImages() {
+            setupDragDrop('pdfToImageDrop', 'pdfToImageFile', files => {
+                const file = files[0];
+                if (file?.type === 'application/pdf') {
+                    document.getElementById('pdfToImageText').textContent = `Selected: ${file.name}`;
+                    document.getElementById('pdfToImageBtn').disabled = false;
+                }
+            });
+
+            document.getElementById('pdfToImageFile').addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (file?.type === 'application/pdf') {
+                    document.getElementById('pdfToImageText').textContent = `Selected: ${file.name}`;
+                    document.getElementById('pdfToImageBtn').disabled = false;
+                }
+            });
+
+            let pageImages = [];
+            document.getElementById('pdfToImageBtn').addEventListener('click', async () => {
+                try {
+                    const file = document.getElementById('pdfToImageFile').files[0];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                    const output = document.getElementById('pdfToImageOutput');
+                    const text = document.getElementById('pdfToImageText');
+                    const zipBtn = document.getElementById('pdfToImageZipDownload');
+
+                    output.innerHTML = '';
+                    output.classList.remove('hidden');
+                    pageImages = [];
+
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 2 });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+                        const img = document.createElement('img');
+                        img.src = canvas.toDataURL('image/png');
+                        img.className = 'w-full rounded-xl shadow-lg hover:shadow-xl transition-all cursor-pointer';
+                        img.onclick = () => {
+                            const a = document.createElement('a');
+                            a.href = img.src;
+                            a.download = `page-${i}.png`;
+                            a.click();
+                        };
+                        output.appendChild(img);
+                        pageImages.push(canvas.toDataURL('image/png'));
+                    }
+
+                    zipBtn.classList.remove('hidden');
+                    zipBtn.onclick = () => {
+                        const zip = new JSZip();
+                        pageImages.forEach((data, i) => zip.file(`page-${i+1}.png`, data.split(',')[1], {base64: true}));
+                        zip.generateAsync({type: 'blob'}).then(blob => {
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = file.name.replace('.pdf', '_pages.zip');
+                            a.click();
+                        });
+                    };
+                    text.textContent = `✅ ${pdf.numPages} pages converted!`;
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('pdfToImageText').textContent = '❌ Error converting PDF';
+                }
+            });
+        }
+
+        // Initialize all tools
+        document.addEventListener('DOMContentLoaded', () => {
+            initImagesToPdf();
+            initPdfToImages();
+        });
+    </script>
+</body>
+</html>
